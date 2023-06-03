@@ -1,0 +1,25 @@
+U zipu se nalazi python program tajnik.py, skripta za pokretanje testnih primjera za isti taj program run.sh, ove upute i objašnjenje rada samog sustava opisSustava.txt. 
+
+1. Password manager "tajnik.py" se pokreće naredbom "/.run.sh" u naredbenom retku
+
+2. naredbeni redak potom ispisuje izlaze za ulaze dane ulaze u run.sh skripti
+
+2. a) ULAZ: "init nekimasterpass" - inicijaliziramo password manager "tajnik.py" po prvi put (novom inicijalizacijom brišemo sve nastalo starom inicijalizacijom)
+                                     - u tajnik.py programu to je izvedeno u funkciji "initialisation" koja kreira tekstualnu datoteku sifre.bin u koju upisuje enkriptirani hash danog masterpassworda.  
+
+2. b) ULAZ: "put nekimasterpass akaunt1 sifra1" - naredbom put na početku signaliziramo password manageru da želimo spremiti širfu za danu adresu (ovdje "akaunt1"), naravno pritom se i unosi i masterpassword za trenutno inicijalizirani manager
+
+2. c) ULAZ: "get nekimasterpass akaunt1"  - naredbom get na početku signaliziramo da želimo dobiti širfu za upisanu adresu (ovdje "akaunt1"), naravno uz unos korektnog masterpassworda
+
+   d) ULAZ: "put nekimasterpass akaunt2 sifra2" i "put nekimasterpass akaunt3 sifra3" - stavljamo još lozinki za neke adrese
+   
+2. e) ULAZ: "put nekimasterpass akaunt1 SIFRA1" - ovdje stavljamo šifru za adresu koju već imamo u bazi pa će se pritom širfa za adresu "akaunt1" update-ati
+
+2. f) ULAZ: "get nekimasterpass akaunt1" - činjenica da smo update-ali šifru za akaunt1 bit će vidljiva 
+
+2. g) ULAZ: "get nekimasterpass akaunt2" - ovdje pokušavamo sa dobrim masterpasswordom doći do šifre za adresu koju nismo pohranili pa pritom sustav javlja da nema takve šifre ni adrese u sustavu
+
+2. h) ULAZ: "put krivimasterpass akaunt3 sifra3" i "get KRIVImasterpass akaunt1" - ovjde je masterpassword krivi te sustav javlja grešku. 
+
+NAPOMENA: ULAZ UVIJEK IZGLEDA: "naredba masterpassword adresa sifra" (gdje se kod naredbe "init" unosi samo naredba i masterpass, kod naredbe put sve, a kod naredbe get izostavljamo širfu) 
+NAPOMENA: naredbe su "put", "get" i "init", da bi sustav radio ispravno potrebno je prvo pokrenuti "init"

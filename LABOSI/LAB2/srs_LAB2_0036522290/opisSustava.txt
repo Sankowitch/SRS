@@ -1,0 +1,71 @@
+Ovaj txt file sadrzi opis rada usermgmt i login programa te opise primjera iz skripte run.sh i zasto su bas takvi (ODJELJAK1 i ODJELJAK2).
+Za OPIS SIGURNOSNIH zahtjeva pogledati ODJELJAK3 u tekstu.
+
+**napomena: ako cete tesitrati kodove nakon pokretanja run.sh skripte imajte na umu koji su korisnici vec dodani
+ 
+TESTIRANJE
+Sustav se sajstoji od dva python programa, usermgmt i login.
+
+Za primjer pokretanja pokrenite run.sh skriptu sa "./run.sh", ali prije toga otvorite tu istu skriptu da vidite primjere ulaza za programe. 
+Skripta run.sh printa prije svakog pokretanja programa u terminal što točno radi i što očekuje od ispitivaca da se upiše u obliku "PrimjerX: NEKI TEKST" te taj dio NIJE dio ispisa programa usermgmt i login. 
+
+**napomena: ako cete koristiti run.sh skirptu upisujte tocno ono sto vam "PrimjerX" kaze da upisete jer opis primjera u ODJELJKU1 I 2 ovisi o tome, ako pak to necete raditi onda testirajte programe odvojeno od run.sh skripte i procitajte upute za pokretanje nize u tekstu pod ODJELJAK1 I 2 
+
+
+ODJELJAK1
+PROGRAM usermgmt
+Naredbe: "add", "del", "forcepass" i "passwd"
+Pokretanje: "python3 usermgmt <naredba> korisnicko_ime" ili "./usermgmt <naredba> korisnicko_ime"
+
+naredba ADD
+-dodaje korisnika
+-nakon pokretanja program sa standardnog ulaza prima "password" i ponovljeni "password"
+-u slucaju da nisu upisane dvije iste lozinke administrator je obavješten o tome - (PRIMJER1 u run.sh)
+-u slucaju da jesu upisane dvije iste lozinke administratoru se javlja da je uspjesno dodan korisnik (PRIMJER2, 3 i 4)
+-korisnik se dodaje na nacin da se dohvati rijecnik spremljen u binarnu datoteku "sifre.bin" ako ga ima, te se on update-a sa novim kljucem koji je korisnicko_ime, a vrijednost je jos jedan rijecnik koji u sebi zadrzi salt (koji je prethodno random generiran), hash (koji je napravljen pomocu lozinke i tog istog salta) i zastavicu (koja govori jeli prilikom logina treba natjerati korisnika da promjeni lozinku) 
+
+naredba DEL
+-brise korisnika
+-u slucaju da korisnik nije u bazi, a pokusa ga se izbrisati administrator ce biti obavijesten o tome (PRIJMER5)
+-u slucaju da je korisnik u bazi program ce uspjesno izbrisati korisnika (PRIMJER6)
+
+naredba PASSWD
+-mijenja lozinku korisnika
+-u slucaju da korinik ne postoji, administratora se obavjestava o tome (PRIMJER7, s time da je u ovom primjeru uzet korisnik kojeg smo izbrisali prethodno iz baze pa ovako usputno demonstiramo da je brisanje stvarno uspjelo)
+-u slucaju da korisnik postoji, mijenja mu se lozinka u bazi (PRIMJER8)
+
+naredba FORCEPASS
+-dize zastavicu na "true" tako da prilikom login-a korisnik usputno mora promjeniti lozinku (PRIMJER9)
+-ovdje takoder ako se unese korisnik koji ne postoji administrator ce biti obavijesten o tome 
+
+naredbe DEL, PASSWD i FORCEPASS zovu sve istu funkciju koja iterira po rijecniku iz datoteke, te ako je naredba bila del samo upisuje u datoteku "sifre.bin" sve osim korisnika kojeg brisemo. Ako je naredba bila forcepass update-a se samo zastavica korisnika, a ako se radi o passwd update-a se salt (kojega iznova generirano) i hash od lozinke te se cijeli taj rijecnik, ovoga puta sa updateanim vrijednostima sprema ispocetka u sifre.bin. (za bolju predodzbu vijdeti funckiju naredbe() u kodu.)
+
+**napomena: pretpostavlja se da ce administrator izvrsiti add prije svih ostalih naredbi te da nece dva puta dodati istog korisnika, no cak i ako to napravi dogodit ce se samo update lozinke za tog korisnika jer se u datoteku koja glumi disk sprema rijecnik (pa se samo updatea value od kljuca koji je korisnicko ime)
+
+
+ODJELJAK 2
+PROGRAM login
+Pokretanje: "python3 login korisnicko_ime" ili "./usermgmt korisnicko_ime"
+-provjerava jeli unesen dobar username, tj username koji je u bazi, ako nije korisnika se pita da ponovi upis lozinke do 3 puta(PRIMJER10) - korisnika se NE obavjestava da je upisao krivi username
+-ako je unesen dobar username, a kriva lozinka (PRIMJER11) - korisnik ima 3 sanse za upisati lozinku - opet korisnik ne zna jeli kirvi username ili lozinka
+-ako je dobar username i sifra korisnika se obavjestava da je sve u redu (PRIMJER12)
+-ako je dobar username i sifra, ali zastavica na forcepass je dignuta korisnika ce se pitati da upise novu lozinku (PRIMJER13 I 14), ali ako korisnik proba upisati ponovno istu sifru login ni promjena iz stare sifre u staru nece se dogoditi (PRIMJER13), no ako korisnik upise stvarno drugaciju sifru login ce biti uspjesan i korisnik ce biti obavjesten o tome (PRIMJER14)
+-ako je korisnik morao promjeniti sifru, i prilikom novog logina upisuje sada novu sifru login ce biti uspjesan, a cinjenica da je zastavica spustena vijdet ce se jer se korisnika nece pitati da opet upise novu lozinku tj da ju opet promjeni (PRIMJER15)
+
+-provjera jeli username dobar- gleda se postoji li uneseni username u rijecniku koji je upisan u "sifre.bin" datoteku.
+-nakon sto je utvrdeno da je username dobar, tj da postoji u bazi provjerava se lozinka. 
+-provjera lozinke odvija se na nacin da se dohvati salt za taj username, hashira se unesena lozinka sa tim saltom, te ako je ta nova hashirana lozinka jednaka kao hashirana lozinka u bazi login je dobar
+-ako je login dobar i dignuta je zastavica za promjenu lozinke korisnik upisuje novu lozinku i to dva puta, ako je dva puta unesena ista loznika provjerava se jeli ta novounesena lozinka ista kao stara (nova lozinka se hashira sa saltom i ako je hash stare lozinke isti kao nove promjena nije uspjela), ako lozinka stvarno nije ista kao stara generira se novi salt hashira se nova lozinka sa novogeneriranim saltom te se u bazu sprema user, ali ovoga puta za spustenom zastavicom "forcepass" (za bolju predodzbu vijdeti funkciju promjeniPass() u kodu)
+
+ODJELJAK3
+SIGURNOSNI ZAHTJEVI
+Signutnosni zahtjevi ispunjeni su na vise nacina.
+1.) za svaku lozinku generiran je salt - dakle 1 lozinka => 1 salt, gdje je salt 16bitni slucajni niz - on je JAVAN, 
+2.) Svaka lozinka hashira se sa svojim saltom- time napadac ne moze cak ni znati postoje li dva korisnika sa istom lozinkom, takoder poznavanje salta napadacu ne olaksava pogadanje lozinke jer je lozinka hashirana sa tim saltom(ovjde uz pomoc scrypt funkcije), a pogadjanje hasha "bruteforsanjem" nije isplativo. U slucaju da napadac i ima popis nekih cesto koristenih lozinki morat ce prvo za svakog korisnika kojeg pokusa napasti dohvatiti njegov salt pa hashirati sve moguce kombinacije [salt, mogucaLozinka] sto je veoma zahtjevno i neisplativo. 
+3.) prilikom logina koji je neispravan korisnika ili moguceg napadaca se ne obavjestava jesu username ili lozinka kirvi. Time se sprecava online napad, gdje napadac pokusava napasati bez da ima pristup dadoteci za popisom username-ova.
+4.) takodjer prilikom promjene lozinke generira se novi salt, pa napadac mora dohvatiti novu daoteku za popisom lozinki
+5.) prilikom logina ako je username dobar dohvaca se javan salt tog usera i hash lozinke. Zatim se upisana lozinka hashira sa tim saltom te ako je taj hash isti kao dohvaceni hash login je dobar tj upisana zaporka je korektna. Takvim spremanjem podataka ostvarujemo sigurnost lozinki.
+6.) takodjer pirlikom promjene lozinki korisnku se ne da da postavi staru lozinku za novu- time ako ga je administrator forsirao da promjeni lozinku jer zna da je sigurnost za tog korisika prethodno narusena korisnik mora upisati potpuno novu lozinku - napadac sad i da zna njegovu staru lozinku ne moze nista s njom
+7.) prilikom unosa lozinki ne vidi se na ekranu sto tocno korisnik/administartor unosi - time se sprijevaca da neko tijekom unosa gleda sto korisnik unosi kao svoju lozinku te tako dodje do lozinke
+
+KORISTENI ALATI: get_random_bytes (za salt) i scypt funkcija (za hashiranje)

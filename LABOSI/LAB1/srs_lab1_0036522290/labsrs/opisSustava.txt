@@ -1,0 +1,33 @@
+Zadatak je bio izraditi sustav koji pohranjuje zaporke za neke adrese koristeći simetričnu kriptografiju.
+Sustav radi na način da se prvobitno inicijalizira naredbom "init" uz koju se i predaje masterpassword ondosno glavna šifra s kojom je moguće dolaziti do ostalih zaporki. 
+
+OPIS TAJNIK.PY SUSTAVA I RADA 1) DO 4)
+OPIS ZADOVOLJENJA SIGURNOSTI I INTEGRITETA 1) DO 4), ALI UKRATKO U 5)
+
+
+1) INICIJALIZACIJA - funkcija initialisation
+Prilkom inicijalizacije stvara se binarna datoteka "sifre.bin" koja glumi disk te će se u nju pohranjivati parovi (adresa, zaporka)
+Također prilikom incijalizacije stvara se i ključ "key" kako bi se podaci u datoteci "sifre.bin" mogli enkripirati, a kasnije i dekriptirati. 
+S takvim ključem (koji je nastao od masterpassworda koji je predan pri inicijalizaciji i slučajno genreriranog salta) enkriptira se nekakav tekst u ovom slučaju hash od masterpassworda algoritmom AES kako bi osigurali sigurnost, u načinu "MODE_GCM" kako bi osigurali integritet.  
+U datoteku "sifre.bin" se potom spremaju salt, nonce i tag (potpis) u izvornom obliku (oni su dakle javni, tj. javno dostupni kako bi se kasnije prilikom naredbi get ili put mogao generirati dobar ključ za dekripciju) i šifrat hasha od masterpassworda
+*inicijalizacija se može izvršiti samo jednom, tj nakon što izvršimo init po drugi put sve informacije u sifre.bin iz zadnje sesije bivaju izbrisane.
+
+2) POHRANA ZAPORKE - funkcija stavi
+Kada se u mainu očita naredba put zove se funckija "CheckMasterpassword" koja provjeri jeli unesen dobar masterpassword te ako je zove funkciju "stavi". Funkcija stavi potom prvojeri postoji li već u bazi na disku (u datoteci sifre.bin) zapis dane adrese tako što zove funkciju "vratiPassZaAdresu" koja vrati postojanje tj nepostojanje šifre za danu adresu. Ukoliko u bazi već postoji par adresa, zaporka za adresu koju želimo "puttati" događa se update zaporke tj. iz baze se briše par (adresa, staraSifra) i pohranjuje se novi par (adresa, novaSifra), u slučaju da takav par prije nije postojao samo se upiše par (adresa, sifra). 
+
+To se sve događa na način da se generira novi salt te se s njim i korektim masterpasswordom kreira novi ključ (ovdje znamo da je masterpassword dobar jer funckija "CheckMasterpassword" ne bi nikad ni pozvala funckiju "stavi" da nije bio upisan dobar masterpassword). Kako funkcija "stavi" prima varijablu "ostatakBajtova" koja je zapravo zapis dekripitanih bajtova iz datoteke sifre.bin na taj zapis samo doda adresu i novu šifru koju treba staviti te sve to enkripita AESom u GCM modu (signurnost + integirtet), što znači da sve prijašnje zaporke i novu unesenu zaključava sa ovim novim generiraniimm ključem. Potom u datoteku sifre.bin upisuje kao header taj novogenerirani salt, nonce i tag i nakon toga kriptat. 
+*ne može se pozivati prije inicijalizacije
+
+3) DOBIVANJE ZAPORKE - funkcija vratiPassZaAdresu
+Kada se u mainu očita naredba get zove se funkcija "CheckMasterpassword" koja provjeri jeli unsesen dobar masterpassword te ako je ovdje zove funckiju "vratiPassZaAdresu".  Funckija "vratiPassZaAdresu" dobiva dekripitrani tekst (varijabla "teskt") kojeg pretvara iz bajtova u čitljiv tekst te pokušava pronaći adresu koju je korisnik upisao. U tekstu adrese i zaporke su sve upisane kao "adresa1 sifra1 adresa2 sifra2 .... adresaN sifraN" tj odvojeni su razmacima (kako je specificirano u uvjetu zadatka i zaporka i adresa smiju imati ASCII kodove od 33 do 126 uključivo pa je odvojenje razmakom dobro riješenje kako je on ASCII 32) Nakon što se u tom velikom stringu zapisa šifri i adresa pronađe dana adresa traži se prvi string poslije te nađene adrese koji je omeđen razamcima- time nalazimo šifru za danu adresu i vraćamo je korisniku, ili funkciji "stavi". U slučaju da nije pronađena adresa korisnika se obavještava da nikad nije ni pohranio šifru za danu adresu. 
+*ne može se pozivati prije inicijalizacije
+
+4) PROVJERA MASTERPASSWORDA - funckija checkMasterpass
+Kada program očita naredbe put ili get zove funkciju "checkMasterpass" koja prima upisani NekiMasterpass. Fukcija "checkMasterpass" potom iz zaglavlja datoteke "sifre.bin" čita salt, nonce i tag. Pomoću salta i NekiMasterpass kreira ključ. S obzirom da je datoteka zadnji put bila enkripitana sa ključem koji je generiran od istog tog salta (koji je upisan u datoteci) i dobrog masterpassworda ovdje će, ako nije upisan dobar masterpassword ključ izgledati drukčije čime se osigurava sigurnost samog sutava. Također sigurnost se i osigurava konstantnom uporabom novih ključeva jer svaki put u funckiji "stavi" kreiramo novi salt, a time i novi ključ. Nakon što smo kreirali ključ s njime ćemo pokušati dekriptirati ostatak daoteke sifre.bin. i pokušat ćemo je verificirati sa tagom (potpisom). U slučaju unosa krivog masterpassworda i ključ će biti drugačiji te će se za vrijeme dekripcije dogoditi pogreška i korisiku će biti ispisana poruka "Master password incorrect or integrity check failed. ". U slučaju  dobro unesenog masterpassworda i ključ će biti dobar te će funckija zvati funkije "stavi" ili "vratiPassZaAdresu" ovino što je korisnik specificirao. 
+
+5) OSIGURAVANJE SIGURNOSTI I INTEGRITETA
+Sigurnost je osigurana korištenjem algoritma AES gdje se svaki put nakon spremanja šifrata nove loznike sprema i novi salt, nonce i tag (oni nisu šifrirani tj. javni su). Spremanjem salta osiguravamo da se ne treba spremati cijeli ključ niti cijeli masterpassword, jer to bi naravno narušilo sigurnost. Na ovaj se način svaki put prilikom pokušaja dekripitanja generira ključ iz danog masterpassworda i spremljenog salta. 
+U slučaju upisanog krivog masterpassworda generirat će se i krivi ključ te se dekripcija "failati", tj napadač neće uspijeti napasti sutav. Dodatno sigurnost je i osigurana konstanom promjenom ključeva mijenjanjem salta prilikom pohrane nove adrese i lozinke za tu adresu. Integritet je osiguran preko potpisa (taga) koji se također provjerava tijekom dekripcije (jer zovemo funkciju decrypt and verify). Tu je korišten mode GCM za AES.
+
+
+
